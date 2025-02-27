@@ -31,7 +31,7 @@ tag_hash (register const char *str, register size_t len)
       301, 301, 301, 301, 301, 301, 301, 301, 301, 301,
       301, 301, 301, 301, 301, 301, 301, 301, 301
     };
-  register unsigned int hval = len;
+  register unsigned int hval = (unsigned int)len;
 
   switch (hval)
     {
