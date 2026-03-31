@@ -83,9 +83,9 @@ class Enum(ctypes.c_uint):
       if param.__class__ != cls:
         raise ValueError("Can't mix enums of different types")
       return param
-    if param < 0 or param > len(cls._values_):
+    if param < 0 or param >= len(cls._values_):
       raise ValueError('%d is out of range for enum type %s; max %d.' %
-                       (param, cls.__name__, len(cls._values_)))
+                       (param, cls.__name__, len(cls._values_) - 1))
     return cls(param)
 
   def __eq__(self, other):
@@ -190,7 +190,7 @@ class Vector(ctypes.Structure):
     if isinstance(i, int):
       if i < 0:
         i += self.length
-      if i > self.length:
+      if i >= self.length:
         raise IndexError
       array_type = _Ptr(_Ptr(self._type_))
       return ctypes.cast(self.data, array_type)[i].contents
@@ -399,8 +399,9 @@ def parse(text, **kwargs):
   # outlives the parse output.  If we let ctypes do it automatically on function
   # call, it creates a temporary buffer which is destroyed when the call
   # completes, and then the original_text pointers point into invalid memory.
-  text_ptr = ctypes.c_char_p(text.encode('utf-8'))
-  output = _parse_with_options(ctypes.byref(options), text_ptr, len(text))
+  encoded = text.encode('utf-8')
+  text_ptr = ctypes.c_char_p(encoded)
+  output = _parse_with_options(ctypes.byref(options), text_ptr, len(encoded))
   try:
     yield output
   finally:
