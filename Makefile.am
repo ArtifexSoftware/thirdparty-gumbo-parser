@@ -40,6 +40,7 @@ libgumbo_la_SOURCES = \
 				src/attribute.h \
 				src/char_ref.c \
 				src/char_ref.h \
+				src/char_ref_gperf.c \
 				src/error.c \
 				src/error.h \
 				src/insertion_mode.h \
