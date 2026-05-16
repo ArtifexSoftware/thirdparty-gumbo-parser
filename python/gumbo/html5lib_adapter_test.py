@@ -13,7 +13,6 @@
 # limitations under the License.
 #
 """Tests for the Gumbo => Html5lib adapter."""
-import codecs
 import collections
 import glob
 import os
@@ -45,7 +44,7 @@ def html5lib_test_files():
 
 class TestData(object):
   def __init__(self, filename):
-    self.f = codecs.open(filename, encoding="utf8")
+    self.f = open(filename, encoding='utf-8', newline='')
 
   def __iter__(self):
     data = collections.defaultdict(lambda: None)
