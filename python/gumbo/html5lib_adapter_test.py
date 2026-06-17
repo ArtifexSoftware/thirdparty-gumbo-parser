@@ -36,10 +36,22 @@ def convertTreeDump(data):
   return "\n".join(convertExpected(data, 3).split("\n")[1:])
 
 
-# Copied/adapted/simplified from html5lib.tests/support.py
 def html5lib_test_files():
-  return glob.glob(os.path.join(
-      TESTDATA_BASE_PATH, 'testdata', 'tree-construction', '*.dat'))
+  return [
+    path for path in glob.glob(
+      os.path.join(
+        TESTDATA_BASE_PATH,
+        'testdata',
+        'html',
+        'syntax',
+        'parsing',
+        'resources',
+        '*.dat',
+      )
+    )
+    # scripted tests include javascript functionality
+    if not os.path.basename(path).startswith('scripted_')
+  ]
 
 
 class TestData(object):
