@@ -1861,6 +1861,35 @@ static void remove_from_parent(GumboParser* parser, GumboNode* node) {
   }
 }
 
+static bool handle_any_other_end_tag(
+    GumboParser* parser, GumboToken* token, GumboTag end_tag) {
+  GumboParserState* state = parser->_parser_state;
+  assert(state->_open_elements.length > 0);
+  assert(node_html_tag_is(state->_open_elements.data[0], GUMBO_TAG_HTML));
+
+  // Walk up the stack of open elements until we find one that either:
+  // a) Matches the tag name we saw
+  // b) Is in the "special" category.
+  // If we see a), implicitly close everything up to and including it.  If we
+  // see b), then record a parse error and leave the stack unchanged.
+  for (int i = state->_open_elements.length; --i >= 0;) {
+    const GumboNode* node = state->_open_elements.data[i];
+    if (node_html_tag_is(node, end_tag)) {
+      generate_implied_end_tags(parser, end_tag);
+      while (node != pop_current_node(parser))
+        ; // Pop everything.
+      return true;
+    } else if (is_special_node(node)) {
+      parser_add_parse_error(parser, token);
+      return false;
+    }
+  }
+
+  // <html> is in the special category, so we should never get here.
+  assert(0);
+  return false;
+}
+
 // http://www.whatwg.org/specs/web-apps/current-work/multipage/the-end.html#an-introduction-to-error-handling-and-strange-cases-in-the-parser
 // Also described in the "in body" handling for end formatting tags.
 static bool adoption_agency_algorithm(
@@ -1884,9 +1913,8 @@ static bool adoption_agency_algorithm(
     for (int j = state->_active_formatting_elements.length; --j >= 0;) {
       GumboNode* current_node = state->_active_formatting_elements.data[j];
       if (current_node == &kActiveFormattingScopeMarker) {
-        gumbo_debug("Broke on scope marker; aborting.\n");
-        // Last scope marker; abort the algorithm.
-        return false;
+        gumbo_debug("Broke on scope marker; no active formatting element.\n");
+        break;
       }
       if (node_html_tag_is(current_node, subject)) {
         // Found it.
@@ -1900,11 +1928,8 @@ static bool adoption_agency_algorithm(
       }
     }
     if (!formatting_node) {
-      // No matching tag; not a parse error outright, but fall through to the
-      // "any other end tag" clause (which may potentially add a parse error,
-      // but not always).
-      gumbo_debug("No active formatting elements; aborting.\n");
-      return false;
+      gumbo_debug("No active formatting elements; running any-other-end-tag.\n");
+      return handle_any_other_end_tag(parser, token, subject);
     }
 
     // Step 6
@@ -3045,34 +3070,11 @@ static bool handle_in_body(GumboParser* parser, GumboToken* token) {
     return true;
   } else {
     assert(token->type == GUMBO_TOKEN_END_TAG);
-    GumboTag end_tag = token->v.end_tag;
-    assert(state->_open_elements.length > 0);
-    assert(node_html_tag_is(state->_open_elements.data[0], GUMBO_TAG_HTML));
-    // Walk up the stack of open elements until we find one that either:
-    // a) Matches the tag name we saw
-    // b) Is in the "special" category.
-    // If we see a), implicitly close everything up to and including it.  If we
-    // see b), then record a parse error, don't close anything (except the
-    // implied end tags) and ignore the end tag token.
-    for (int i = state->_open_elements.length; --i >= 0;) {
-      const GumboNode* node = state->_open_elements.data[i];
-      if (node_html_tag_is(node, end_tag)) {
-        generate_implied_end_tags(parser, end_tag);
-        // TODO(jdtang): Do I need to add a parse error here?  The condition in
-        // the spec seems like it's the inverse of the loop condition above, and
-        // so would never fire.
-        while (node != pop_current_node(parser))
-          ;  // Pop everything.
-        return true;
-      } else if (is_special_node(node)) {
-        parser_add_parse_error(parser, token);
-        ignore_token(parser);
-        return false;
-      }
+    bool success = handle_any_other_end_tag(parser, token, token->v.end_tag);
+    if (!success) {
+      ignore_token(parser);
     }
-    // <html> is in the special category, so we should never get here.
-    assert(0);
-    return false;
+    return success;
   }
 }
 
