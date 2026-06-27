@@ -109,7 +109,7 @@ class StringPiece(ctypes.Structure):
   _fields_ = [
       ('data', _Ptr(ctypes.c_char)),
       ('length', ctypes.c_size_t),
-      ]
+  ]
 
   def __len__(self):
     return self.length
@@ -123,7 +123,7 @@ class SourcePosition(ctypes.Structure):
       ('line', ctypes.c_uint),
       ('column', ctypes.c_uint),
       ('offset', ctypes.c_uint)
-      ]
+  ]
 SourcePosition.EMPTY = SourcePosition.in_dll(_dll, 'kGumboEmptySourcePosition')
 
 
@@ -151,7 +151,7 @@ class Attribute(ctypes.Structure):
       ('name_end', SourcePosition),
       ('value_start', SourcePosition),
       ('value_end', SourcePosition)
-      ]
+  ]
 
 
 class Vector(ctypes.Structure):
@@ -160,7 +160,7 @@ class Vector(ctypes.Structure):
       ('data', _Ptr(ctypes.c_void_p)),
       ('length', ctypes.c_uint),
       ('capacity', ctypes.c_uint)
-      ]
+  ]
 
   class Iter(object):
     def __init__(self, vector):
@@ -224,7 +224,7 @@ class Document(ctypes.Structure):
       ('public_identifier', ctypes.c_char_p),
       ('system_identifier', ctypes.c_char_p),
       ('doc_type_quirks_mode', QuirksMode),
-      ]
+  ]
 
   def __repr__(self):
     return 'Document'
@@ -272,7 +272,7 @@ class Element(ctypes.Structure):
       ('start_pos', SourcePosition),
       ('end_pos', SourcePosition),
       ('attributes', AttributeVector),
-      ]
+  ]
 
   @property
   def tag_name(self):
@@ -299,15 +299,22 @@ class Text(ctypes.Structure):
       ('text', ctypes.c_char_p),
       ('original_text', StringPiece),
       ('start_pos', SourcePosition)
-      ]
+  ]
 
   def __repr__(self):
     return 'Text(%r)' % self.text
 
 
 class NodeType(Enum):
-  _values_ = ['DOCUMENT', 'ELEMENT', 'TEXT', 'CDATA',
-              'COMMENT', 'WHITESPACE', 'TEMPLATE']
+  _values_ = [
+    'DOCUMENT',
+    'ELEMENT',
+    'TEXT',
+    'CDATA',
+    'COMMENT',
+    'WHITESPACE',
+    'TEMPLATE',
+  ]
 
 
 class NodeUnion(ctypes.Union):
@@ -315,7 +322,7 @@ class NodeUnion(ctypes.Union):
       ('document', Document),
       ('element', Element),
       ('text', Text),
-      ]
+  ]
 
 
 class Node(ctypes.Structure):
@@ -353,7 +360,7 @@ Node._fields_ = [
     # TODO(jdtang): Make a real list of enum constants for this.
     ('parse_flags', _bitvector),
     ('v', NodeUnion)
-    ]
+]
 NodeVector._type_ = Node
 
 
@@ -369,7 +376,7 @@ class Options(ctypes.Structure):
       ('max_errors', ctypes.c_int),
       ('fragment_context', Tag),
       ('fragment_namespace', Namespace),
-      ]
+  ]
 
 
 class Output(ctypes.Structure):
@@ -378,7 +385,7 @@ class Output(ctypes.Structure):
       ('root', _Ptr(Node)),
       # TODO(jdtang): Error type.
       ('errors', Vector),
-      ]
+  ]
 
 @contextlib.contextmanager
 def parse(text, **kwargs):
@@ -425,7 +432,23 @@ _tag_enum = _dll.gumbo_tag_enum
 _tag_enum.argtypes = [ctypes.c_char_p]
 _tag_enum.restype = Tag
 
-__all__ = ['StringPiece', 'SourcePosition', 'AttributeNamespace', 'Attribute',
-           'Vector', 'AttributeVector', 'NodeVector', 'QuirksMode', 'Document',
-           'Namespace', 'Tag', 'Element', 'Text', 'NodeType', 'Node',
-           'Options', 'Output', 'parse']
+__all__ = [
+  'StringPiece',
+  'SourcePosition',
+  'AttributeNamespace',
+  'Attribute',
+  'Vector',
+  'AttributeVector',
+  'NodeVector',
+  'QuirksMode',
+  'Document',
+  'Namespace',
+  'Tag',
+  'Element',
+  'Text',
+  'NodeType',
+  'Node',
+  'Options',
+  'Output',
+  'parse'
+]

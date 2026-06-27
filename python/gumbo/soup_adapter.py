@@ -82,7 +82,7 @@ _HANDLERS = [
     _add_text(bs4.Comment),
     _add_text(bs4.NavigableString),
     _add_element,
-    ]
+]
 
 
 def _add_node(soup, node):

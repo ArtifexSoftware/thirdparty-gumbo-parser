@@ -31,7 +31,7 @@ _NAMESPACES = [
     'http://www.w3.org/1999/xhtml',
     'http://www.w3.org/2000/svg',
     'http://www.w3.org/1998/Math/MathML',
-    ]
+]
 
 
 def _convert_doctype(treebuilder, source_node):
@@ -42,7 +42,7 @@ def _convert_doctype(treebuilder, source_node):
       'name': source_node.name.decode('utf-8'),
       'publicId': source_node.public_identifier.decode('utf-8'),
       'systemId': source_node.system_identifier.decode('utf-8'),
-      })
+  })
 
 
 def _convert_attributes(source_node):
@@ -67,7 +67,7 @@ def _convert_element(source_node):
       'name': source_node.v.element.tag_name.decode('utf-8'),
       'namespace': _NAMESPACES[source_node.v.element.tag_namespace.value],
       'data': _convert_attributes(source_node),
-      }
+  }
 
 
 def _insert_root(treebuilder, source_node, pop_element = True):
