@@ -165,6 +165,14 @@ typedef enum {
 } GumboTag;
 
 /**
+ * Returns true if the tag corresponds to a void element, false otherwise.
+ * Void elements only have a start tag; end tags must not be specified for void
+ * elements. Void elements can't have any contents (since there's no end tag, no
+ * content can be put between the start tag and the end tag).
+ */
+bool gumbo_tag_is_void(GumboTag tag);
+
+/**
  * Returns the normalized (usually all-lowercased, except for foreign content)
  * tag name for an GumboTag enum.  Return value is static data owned by the
  * library.
