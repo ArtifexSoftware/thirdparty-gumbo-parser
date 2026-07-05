@@ -36,6 +36,8 @@ libaries.
 Goals & features:
 -----------------
 
+- Full compliance with the `WHATWG HTML5 spec <https://html.spec.whatwg.org/multipage>`_.
+
 - Robust and resilient to bad input.
 
 - Simple API that can be easily wrapped by other languages.
@@ -44,7 +46,7 @@ Goals & features:
 
 - Relatively lightweight, with no outside dependencies.
 
-- Passes all `html5lib-0.95 tests <https://github.com/html5lib/html5lib-tests>`_.
+- Conformance with the `Web Platform Tests tree construction test suite <https://github.com/web-platform-tests/wpt/tree/master/html/syntax/parsing/resources>`_.
 
 - Tested on over 2.5 billion pages from Google's index.
 

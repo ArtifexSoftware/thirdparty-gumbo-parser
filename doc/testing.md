@@ -30,7 +30,7 @@ alternatively
 python3 -m unittest discover -s python -p '*test.py'
 ```
 
-## html5lib-tests
+## Web Platform Tests tree construction tests
 
 ```sh
 git submodule update --init

@@ -10,13 +10,13 @@ any development since 2016.
 
 Goals & features:
 
-* Fully conformant with the [HTML5 spec](https://html.spec.whatwg.org/multipage).
+* Full compliance with the [HTML5 spec](https://html.spec.whatwg.org/multipage).
 * Robust and resilient to bad input.
 * Simple API that can be easily wrapped by other languages.
 * Support for source locations and pointers back to the original text.
 * Support for fragment parsing.
+* Conformance with the [Web Platform Tests tree construction test suite](https://github.com/web-platform-tests/wpt/tree/master/html/syntax/parsing/resources).
 * Relatively lightweight, with no outside dependencies.
-* Passes all [html5lib tests](https://github.com/html5lib/html5lib-tests).
 * Tested on over 2.5 billion pages from Google's index.
 * Follows [Semantic Versioning](https://semver.org) scheme.
 
