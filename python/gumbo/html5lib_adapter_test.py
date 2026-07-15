@@ -65,8 +65,6 @@ class TestData(object):
       heading = self.isSectionHeading(line)
       if heading:
         if data and heading == 'data':
-          #Remove trailing newline
-          data[key] = data[key][:-1]
           yield self.normaliseOutput(data)
           data = collections.defaultdict(lambda: None)
         key = heading
@@ -85,9 +83,12 @@ class TestData(object):
       return False
 
   def normaliseOutput(self, data):
-    # Remove trailing newlines
     for key, value in data.items():
-      if value.endswith("\n"):
+      if value is None:
+        continue
+      if key in ('document', 'document-fragment'):
+        data[key] = value.rstrip('\n')
+      elif value.endswith('\n'):
         data[key] = value[:-1]
     return data
 
