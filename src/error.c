@@ -99,6 +99,7 @@ static void handle_parser_error(GumboParser* parser,
       print_message(parser, output, "This is not a legal doctype");
       return;
     case GUMBO_TOKEN_COMMENT:
+    case GUMBO_TOKEN_PROCESSING_INSTRUCTION:
       // Should never happen; comments are always legal.
       assert(0);
       // But just in case...

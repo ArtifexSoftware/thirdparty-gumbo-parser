@@ -314,7 +314,8 @@ typedef enum {
    * the spec suggests.  Recursing on GUMBO_NODE_ELEMENT will do the right thing
    * here, while clients that want to include template contents should also
    * check for GUMBO_NODE_TEMPLATE.  v will be a GumboElement.  */
-  GUMBO_NODE_TEMPLATE
+  GUMBO_NODE_TEMPLATE,
+  GUMBO_NODE_PROCESSING_INSTRUCTION,
 } GumboNodeType;
 
 /**

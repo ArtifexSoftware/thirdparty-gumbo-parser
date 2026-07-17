@@ -314,6 +314,7 @@ class NodeType(Enum):
     'COMMENT',
     'WHITESPACE',
     'TEMPLATE',
+    'PROCESSING_INSTRUCTION',
   ]
 
 

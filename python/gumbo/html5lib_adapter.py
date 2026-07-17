@@ -69,6 +69,13 @@ def _convert_element(source_node):
       'data': _convert_attributes(source_node),
   }
 
+def _insert_processing_instruction(treebuilder, source_node):
+  node = treebuilder.elementClass(
+    '?%s?' % source_node.v.text.text.decode('utf-8'),
+    None
+  )
+  node.element.nodeType = node.element.PROCESSING_INSTRUCTION_NODE
+  treebuilder.document.appendChild(node)
 
 def _insert_root(treebuilder, source_node, pop_element = True):
   treebuilder.insertRoot(_convert_element(source_node))
@@ -81,6 +88,13 @@ def _insert_node(treebuilder, source_node):
   assert source_node.type != gumboc.NodeType.DOCUMENT
   if source_node.type == gumboc.NodeType.COMMENT:
     treebuilder.insertComment({'data': source_node.v.text.text.decode('utf-8')})
+  elif source_node.type == gumboc.NodeType.PROCESSING_INSTRUCTION:
+    treebuilder.insertElementNormal({
+      'name': '?%s?' % source_node.v.text.text.decode('utf-8'),
+      'namespace': None,
+      'data': {},
+    })
+    treebuilder.openElements.pop()
   elif source_node.type in (
       gumboc.NodeType.TEXT,
       gumboc.NodeType.WHITESPACE,
@@ -110,6 +124,8 @@ class HTMLParser(object):
         if node.type == gumboc.NodeType.COMMENT:
           self.tree.insertComment({'data': node.v.text.text.decode('utf-8')},
                                   self.tree.document)
+        elif node.type == gumboc.NodeType.PROCESSING_INSTRUCTION:
+          _insert_processing_instruction(self.tree, node)
         elif node.type in (gumboc.NodeType.ELEMENT, gumboc.NodeType.TEMPLATE):
           _insert_root(self.tree, output.contents.root.contents)
         else:

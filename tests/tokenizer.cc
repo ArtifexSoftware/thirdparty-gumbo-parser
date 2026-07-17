@@ -670,4 +670,277 @@ TEST_F(GumboTokenizerTest, BogusEndTag) {
   EXPECT_EQ("</div</th>", ToString(token_.original_text));
   errors_are_expected_ = true;
 }
+
+TEST_F(GumboTokenizerTest, ProcessingInstruction) {
+  SetInput("<?something>");
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  ASSERT_EQ(GUMBO_TOKEN_PROCESSING_INSTRUCTION, token_.type);
+  EXPECT_EQ(1, token_.position.line);
+  EXPECT_EQ(1, token_.position.column);
+  EXPECT_EQ(0, token_.position.offset);
+  EXPECT_EQ("<?something>", ToString(token_.original_text));
+  EXPECT_STREQ("something ", token_.v.text);
+
+  gumbo_token_destroy(&parser_, &token_);
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  EXPECT_EQ(GUMBO_TOKEN_EOF, token_.type);
+}
+
+TEST_F(GumboTokenizerTest, ProcessingInstructionCloseWithAndWithoutQuestion) {
+  SetInput("<?t d >");
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  ASSERT_EQ(GUMBO_TOKEN_PROCESSING_INSTRUCTION, token_.type);
+  EXPECT_STREQ("t d ", token_.v.text);
+  EXPECT_EQ("<?t d >", ToString(token_.original_text));
+
+  gumbo_token_destroy(&parser_, &token_);
+  SetInput("<?t d ?>");
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  ASSERT_EQ(GUMBO_TOKEN_PROCESSING_INSTRUCTION, token_.type);
+  EXPECT_STREQ("t d ", token_.v.text);
+  EXPECT_EQ("<?t d ?>", ToString(token_.original_text));
+}
+
+TEST_F(GumboTokenizerTest, ProcessingInstructionTargetAndData) {
+  SetInput("<?php echo \"x\"?>");
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  ASSERT_EQ(GUMBO_TOKEN_PROCESSING_INSTRUCTION, token_.type);
+  EXPECT_STREQ("php echo \"x\"", token_.v.text);
+}
+
+TEST_F(GumboTokenizerTest, ProcessingInstructionEmptyData) {
+  SetInput("<?t?>");
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  ASSERT_EQ(GUMBO_TOKEN_PROCESSING_INSTRUCTION, token_.type);
+  EXPECT_STREQ("t ", token_.v.text);
+}
+
+TEST_F(GumboTokenizerTest, ProcessingInstructionQuestionMarksInData) {
+  SetInput("<?a b?c?\?>"); // \? avoids the ??> trigraph
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  ASSERT_EQ(GUMBO_TOKEN_PROCESSING_INSTRUCTION, token_.type);
+  EXPECT_STREQ("a b?c?", token_.v.text);
+}
+
+TEST_F(GumboTokenizerTest, ProcessingInstructionWhitespaceAfterTarget) {
+  SetInput("<?t \t\n x?>");
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  ASSERT_EQ(GUMBO_TOKEN_PROCESSING_INSTRUCTION, token_.type);
+  EXPECT_STREQ("t x", token_.v.text);
+
+  gumbo_token_destroy(&parser_, &token_);
+  SetInput("<?t\tx>");
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  ASSERT_EQ(GUMBO_TOKEN_PROCESSING_INSTRUCTION, token_.type);
+  EXPECT_STREQ("t x", token_.v.text);
+}
+
+TEST_F(GumboTokenizerTest, ProcessingInstructionTargetCharset) {
+  SetInput("<?t-2_a x?>");
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  ASSERT_EQ(GUMBO_TOKEN_PROCESSING_INSTRUCTION, token_.type);
+  EXPECT_STREQ("t-2_a x", token_.v.text);
+
+  gumbo_token_destroy(&parser_, &token_);
+  SetInput("<?_x y?>");
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  ASSERT_EQ(GUMBO_TOKEN_PROCESSING_INSTRUCTION, token_.type);
+  EXPECT_STREQ("_x y", token_.v.text);
+}
+
+TEST_F(GumboTokenizerTest, ProcessingInstructionXmlDeclarationIsBogusComment) {
+  SetInput("<?xml version=\"1.0\"?>");
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  ASSERT_EQ(GUMBO_TOKEN_COMMENT, token_.type);
+  EXPECT_STREQ("?xml version=\"1.0\"?", token_.v.text);
+  EXPECT_EQ("<?xml version=\"1.0\"?>", ToString(token_.original_text));
+}
+
+TEST_F(GumboTokenizerTest, ProcessingInstructionReservedTargetCaseInsensitive) {
+  SetInput("<?XmL x?>");
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  ASSERT_EQ(GUMBO_TOKEN_COMMENT, token_.type);
+  EXPECT_STREQ("?XmL x?", token_.v.text);
+}
+
+TEST_F(GumboTokenizerTest, ProcessingInstructionReservedTargetPrefix) {
+  SetInput("<?xmlfoo>");
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  ASSERT_EQ(GUMBO_TOKEN_COMMENT, token_.type);
+  EXPECT_STREQ("?xmlfoo", token_.v.text);
+}
+
+TEST_F(GumboTokenizerTest, ProcessingInstructionInvalidTargetStart) {
+  SetInput("<?1t x>");
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  ASSERT_EQ(GUMBO_TOKEN_COMMENT, token_.type);
+  EXPECT_STREQ("?1t x", token_.v.text);
+
+  gumbo_token_destroy(&parser_, &token_);
+  SetInput("<?-t>");
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  ASSERT_EQ(GUMBO_TOKEN_COMMENT, token_.type);
+  EXPECT_STREQ("?-t", token_.v.text);
+}
+
+TEST_F(GumboTokenizerTest, ProcessingInstructionNoTarget) {
+  SetInput("<? x>");
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  ASSERT_EQ(GUMBO_TOKEN_COMMENT, token_.type);
+  EXPECT_STREQ("? x", token_.v.text);
+
+  gumbo_token_destroy(&parser_, &token_);
+  SetInput("<?>");
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  ASSERT_EQ(GUMBO_TOKEN_COMMENT, token_.type);
+  EXPECT_STREQ("?", token_.v.text);
+
+  gumbo_token_destroy(&parser_, &token_);
+  SetInput("<?\?>");  // \? avoids the ??> trigraph.
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  ASSERT_EQ(GUMBO_TOKEN_COMMENT, token_.type);
+  EXPECT_STREQ("??", token_.v.text);
+}
+
+TEST_F(GumboTokenizerTest, ProcessingInstructionValidTargetNoSeparator) {
+  SetInput("<?php/>");
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  ASSERT_EQ(GUMBO_TOKEN_COMMENT, token_.type);
+  EXPECT_STREQ("?php/", token_.v.text);
+}
+
+TEST_F(GumboTokenizerTest, ProcessingInstructionEofAfterOpen) {
+  SetInput("<?");
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  EXPECT_EQ(GUMBO_TOKEN_EOF, token_.type);
+}
+
+TEST_F(GumboTokenizerTest, ProcessingInstructionEofInTarget) {
+  SetInput("<?php");
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  EXPECT_EQ(GUMBO_TOKEN_EOF, token_.type);
+}
+
+TEST_F(GumboTokenizerTest, ProcessingInstructionEofInData) {
+  SetInput("<?php ");
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  EXPECT_EQ(GUMBO_TOKEN_EOF, token_.type);
+
+  SetInput("<?php ec");
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  EXPECT_EQ(GUMBO_TOKEN_EOF, token_.type);
+
+  SetInput("<?php x?");
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  EXPECT_EQ(GUMBO_TOKEN_EOF, token_.type);
+}
+
+TEST_F(GumboTokenizerTest, ProcessingInstructionEofInBogusFallback) {
+  SetInput("<?1x");
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  ASSERT_EQ(GUMBO_TOKEN_COMMENT, token_.type);
+  EXPECT_STREQ("?1x", token_.v.text);
+  EXPECT_EQ("<?1x", ToString(token_.original_text));
+
+  gumbo_token_destroy(&parser_, &token_);
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  EXPECT_EQ(GUMBO_TOKEN_EOF, token_.type);
+}
+
+TEST_F(GumboTokenizerTest, ProcessingInstructionConsecutive) {
+  SetInput("<?one><?two>");
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  ASSERT_EQ(GUMBO_TOKEN_PROCESSING_INSTRUCTION, token_.type);
+  EXPECT_STREQ("one ", token_.v.text);
+  EXPECT_EQ("<?one>", ToString(token_.original_text));
+
+  gumbo_token_destroy(&parser_, &token_);
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  ASSERT_EQ(GUMBO_TOKEN_PROCESSING_INSTRUCTION, token_.type);
+  EXPECT_STREQ("two ", token_.v.text);
+  EXPECT_EQ("<?two>", ToString(token_.original_text));
+
+  gumbo_token_destroy(&parser_, &token_);
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  EXPECT_EQ(GUMBO_TOKEN_EOF, token_.type);
+}
+
+TEST_F(GumboTokenizerTest, ProcessingInstructionThenEndTag) {
+  SetInput("<?t d ></div>");
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  ASSERT_EQ(GUMBO_TOKEN_PROCESSING_INSTRUCTION, token_.type);
+  EXPECT_STREQ("t d ", token_.v.text);
+
+  gumbo_token_destroy(&parser_, &token_);
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  ASSERT_EQ(GUMBO_TOKEN_END_TAG, token_.type);
+  EXPECT_EQ(GUMBO_TAG_DIV, token_.v.end_tag);
+}
+
+TEST_F(GumboTokenizerTest, ProcessingInstructionThenStartTag) {
+  SetInput("<?t><span>");
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  ASSERT_EQ(GUMBO_TOKEN_PROCESSING_INSTRUCTION, token_.type);
+  EXPECT_STREQ("t ", token_.v.text);
+
+  gumbo_token_destroy(&parser_, &token_);
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  ASSERT_EQ(GUMBO_TOKEN_START_TAG, token_.type);
+  EXPECT_EQ(GUMBO_TAG_SPAN, token_.v.start_tag.tag);
+}
+
+TEST_F(GumboTokenizerTest, ProcessingInstructionBetweenText) {
+  SetInput("x<?t?>y");
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  ASSERT_EQ(GUMBO_TOKEN_CHARACTER, token_.type);
+  EXPECT_EQ('x', token_.v.character);
+
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  ASSERT_EQ(GUMBO_TOKEN_PROCESSING_INSTRUCTION, token_.type);
+  EXPECT_EQ(1, token_.position.offset);
+  EXPECT_EQ(2, token_.position.column);
+  EXPECT_EQ("<?t?>", ToString(token_.original_text));
+  EXPECT_STREQ("t ", token_.v.text);
+
+  gumbo_token_destroy(&parser_, &token_);
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  ASSERT_EQ(GUMBO_TOKEN_CHARACTER, token_.type);
+  EXPECT_EQ('y', token_.v.character);
+  EXPECT_EQ(6, token_.position.offset);
+}
+
+TEST_F(GumboTokenizerTest, ProcessingInstructionTrailingTextNotConsumed) {
+  SetInput("<?t d > ?>");
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  ASSERT_EQ(GUMBO_TOKEN_PROCESSING_INSTRUCTION, token_.type);
+  EXPECT_STREQ("t d ", token_.v.text);
+
+  gumbo_token_destroy(&parser_, &token_);
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  ASSERT_EQ(GUMBO_TOKEN_WHITESPACE, token_.type);
+  EXPECT_EQ(' ', token_.v.character);
+
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  ASSERT_EQ(GUMBO_TOKEN_CHARACTER, token_.type);
+  EXPECT_EQ('?', token_.v.character);
+
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  ASSERT_EQ(GUMBO_TOKEN_CHARACTER, token_.type);
+  EXPECT_EQ('>', token_.v.character);
+
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  EXPECT_EQ(GUMBO_TOKEN_EOF, token_.type);
+}
+
+TEST_F(GumboTokenizerTest, ProcessingInstructionNullByteInData) {
+  const char kInput[] = "<?t a\0b?>";
+  text_ = kInput;
+  gumbo_tokenizer_state_destroy(&parser_);
+  gumbo_tokenizer_state_init(&parser_, kInput, sizeof(kInput) - 1);
+  EXPECT_TRUE(gumbo_lex(&parser_, &token_));
+  ASSERT_EQ(GUMBO_TOKEN_PROCESSING_INSTRUCTION, token_.type);
+  EXPECT_STREQ("t a\xEF\xBF\xBD" "b", token_.v.text);
+  errors_are_expected_ = true;
+}
+
 }  // namespace
