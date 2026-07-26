@@ -36,27 +36,58 @@ Non-goals:
   representation more suited for the particular needs of your program before
   operating on it.
 
-## Basic usage
+## Build
 
+```
+meson setup build
+meson compile -C build
+meson test -C build
+meson install -C build
+```
+
+## Example
+
+```
+example.c
+```
 ```c
 #include <gumbo.h>
+#include <stdio.h>
 
 int main() {
-	GumboOutput* output = gumbo_parse("<h1>Hello, World!</h1>");
-	// Do stuff with output->root
+	GumboOutput *output = gumbo_parse("<h1>Hello, World!</h1>");
+
+	const GumboNode *stack[64] = {output->root};
+	int depth[64] = {0};
+	for (int top = 0; top >= 0; --top) {
+		const GumboNode *node = stack[top];
+		int d = depth[top];
+		if (node->type == GUMBO_NODE_ELEMENT) {
+			printf("%*s<%s>\n", d * 2, "", gumbo_normalized_tagname(node->v.element.tag));
+			for (unsigned i = node->v.element.children.length; i-- > 0; ++top) {
+				stack[top] = node->v.element.children.data[i];
+				depth[top] = d + 1;
+			}
+		} else if (node->type == GUMBO_NODE_TEXT) {
+			printf("%*s%s\n", d * 2, "", node->v.text.text);
+		}
+	}
+
 	gumbo_destroy_output(&kGumboDefaultOptions, output);
 }
+```
+```
+gcc example.c `pkg-config --cflags --libs gumbo`
 ```
 
 A variety of sample programs can be found in the [examples](https://codeberg.org/gumbo-parser/gumbo-parser/src/branch/master/examples) directory.
 To build them, enable the `examples` build option during setup, e.g.:
 ```
-meson setup builddir -Dexamples=true
+meson setup build -Dexamples=true
 ```
 
 ## Learning more
 
-* Building instructions: [doc/building.md](https://codeberg.org/gumbo-parser/gumbo-parser/src/branch/master/doc/building.md)
 * Language bindings and other tools: [doc/bindings.md](https://codeberg.org/gumbo-parser/gumbo-parser/src/branch/master/doc/bindings.md)
 * Contributing guide: [doc/contributing.md](https://codeberg.org/gumbo-parser/gumbo-parser/src/branch/master/doc/contributing.md)
 * Debugging notes: [doc/debugging.md](https://codeberg.org/gumbo-parser/gumbo-parser/src/branch/master/doc/debugging.md)
