@@ -82,6 +82,7 @@ gumbo_test_SOURCES = \
 				tests/parser.cc \
 				tests/string_buffer.cc \
 				tests/string_piece.cc \
+				tests/tag.cc \
 				tests/tokenizer.cc \
 				tests/test_utils.cc \
 				tests/utf8.cc \
